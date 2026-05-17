@@ -1,0 +1,958 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>⚡ Game Hub</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Bungee&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg:           #05050f;
+      --surface:      #0c0c1e;
+      --border:       #1e1e3a;
+      --ttt:          #00ffcc;
+      --ludo:         #ff6b35;
+      --uno:          #ff2d6b;
+      --imposter:     #a855f7;
+      --gold:         #ffd700;
+      --text:         #f0f0ff;
+      --muted:        #5a5a80;
+      --glow-ttt:     0 0 40px rgba(0,255,204,.25);
+      --glow-ludo:    0 0 40px rgba(255,107,53,.25);
+      --glow-uno:     0 0 40px rgba(255,45,107,.25);
+      --glow-imposter:0 0 40px rgba(168,85,247,.35);
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Space Grotesk', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 2rem 1rem 4rem;
+      overflow-x: hidden;
+    }
+
+    /* Animated grid background */
+    body::before {
+      content: '';
+      position: fixed; inset: 0; z-index: 0;
+      background:
+        repeating-linear-gradient(0deg, transparent, transparent 49px, rgba(0,255,204,.03) 50px),
+        repeating-linear-gradient(90deg, transparent, transparent 49px, rgba(0,255,204,.03) 50px);
+      animation: gridDrift 30s linear infinite;
+    }
+    @keyframes gridDrift { to { background-position: 0 50px; } }
+
+    /* Neon orbs */
+    .orb {
+      position: fixed; border-radius: 50%; filter: blur(80px);
+      pointer-events: none; z-index: 0; animation: orbFloat 8s ease-in-out infinite;
+    }
+    .orb1 { width: 400px; height: 400px; background: rgba(0,255,204,.07); top: -100px; left: -100px; }
+    .orb2 { width: 350px; height: 350px; background: rgba(255,45,107,.07); bottom: -100px; right: -100px; animation-delay: -4s; }
+    .orb3 { width: 300px; height: 300px; background: rgba(255,215,0,.05); top: 50%; left: 50%; transform: translate(-50%,-50%); animation-delay: -2s; }
+    .orb4 { width: 280px; height: 280px; background: rgba(168,85,247,.06); top: 60%; left: 10%; animation-delay: -6s; }
+    @keyframes orbFloat { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-30px)} }
+
+    .content { position: relative; z-index: 1; width: 100%; max-width: 960px; }
+
+    /* ── Header ── */
+    .hub-header { text-align: center; margin-bottom: 3rem; animation: slideDown .7s cubic-bezier(.22,1,.36,1) both; }
+    .hub-title {
+      font-family: 'Bungee', cursive;
+      font-size: clamp(3rem, 10vw, 6rem);
+      letter-spacing: .05em; line-height: 1;
+      background: linear-gradient(135deg, var(--ttt) 0%, var(--gold) 40%, var(--uno) 100%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+      filter: drop-shadow(0 0 30px rgba(0,255,204,.3));
+      animation: titlePulse 3s ease-in-out infinite;
+    }
+    @keyframes titlePulse {
+      0%,100% { filter: drop-shadow(0 0 20px rgba(0,255,204,.3)); }
+      50%      { filter: drop-shadow(0 0 50px rgba(255,215,0,.5)); }
+    }
+    .hub-sub {
+      margin-top: .7rem;
+      font-size: .85rem; letter-spacing: .25em; text-transform: uppercase; color: var(--muted);
+    }
+    .hub-sub span { color: var(--ttt); animation: blink 1.5s step-end infinite; }
+    @keyframes blink { 50% { opacity: 0; } }
+
+    /* ── Game grid ── */
+    .game-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 1.5rem;
+    }
+
+    /* ── Game card ── */
+    .game-card {
+      position: relative;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 2rem 1.6rem 1.6rem;
+      cursor: pointer; overflow: hidden;
+      transition: transform .3s cubic-bezier(.22,1,.36,1), border-color .3s, box-shadow .3s;
+      animation: slideUp .7s cubic-bezier(.22,1,.36,1) both;
+      text-decoration: none; color: inherit; display: block;
+    }
+    .game-card:nth-child(2) { animation-delay: .1s; }
+    .game-card:nth-child(3) { animation-delay: .2s; }
+    .game-card:nth-child(4) { animation-delay: .3s; }
+
+    .game-card::before {
+      content: ''; position: absolute; top: 0; right: 0;
+      width: 80px; height: 80px; border-radius: 0 20px 0 80px; transition: all .3s;
+    }
+    .game-card::after {
+      content: ''; position: absolute; bottom: 0; left: 0; right: 0;
+      height: 2px; transform: scaleX(0); transform-origin: left;
+      transition: transform .4s cubic-bezier(.22,1,.36,1);
+    }
+
+    .game-card.ttt      { --accent: var(--ttt); }
+    .game-card.ludo     { --accent: var(--ludo); }
+    .game-card.uno      { --accent: var(--uno); }
+    .game-card.imposter { --accent: var(--imposter); }
+
+    /* ── LUDO SPECIAL CARD ── */
+    .game-card.ludo {
+      background: linear-gradient(145deg, #0f0a1e, #1a0e0a, #0c0f1e);
+      border: 1.5px solid rgba(255,107,53,.3);
+      overflow: hidden;
+      padding: 0;
+    }
+    .ludo-card-inner {
+      position: relative;
+      padding: 1.6rem;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      z-index: 2;
+    }
+    /* animated gradient border glow */
+    .game-card.ludo::before {
+      content: '';
+      position: absolute;
+      inset: -2px;
+      border-radius: 21px;
+      background: conic-gradient(
+        from var(--angle, 0deg),
+        #ff6b35, #ffd700, #ff2d6b, #a855f7, #ff6b35
+      );
+      z-index: 0;
+      opacity: 0;
+      transition: opacity .4s;
+    }
+    .game-card.ludo:hover::before { opacity: 1; animation: borderSpin 3s linear infinite; }
+    @property --angle { syntax:'<angle>'; initial-value:0deg; inherits:false; }
+    @keyframes borderSpin { to { --angle: 360deg; } }
+
+    /* inner bg covers the border */
+    .game-card.ludo .ludo-bg-cover {
+      position: absolute;
+      inset: 1.5px;
+      border-radius: 19px;
+      background: linear-gradient(145deg, #0f0a1e, #1c0f0b, #0c0f1e);
+      z-index: 1;
+    }
+
+    /* mini ludo board visual */
+    .ludo-board-preview {
+      position: absolute;
+      right: -10px; top: -10px;
+      width: 120px; height: 120px;
+      opacity: .13;
+      z-index: 1;
+      transition: opacity .3s;
+    }
+    .game-card.ludo:hover .ludo-board-preview { opacity: .28; }
+
+    /* floating dice animations */
+    .ludo-dice-bg {
+      position: absolute;
+      font-size: 1.2rem;
+      z-index: 1;
+      pointer-events: none;
+      filter: blur(.4px);
+      opacity: 0;
+      animation: ludoDiceFloat linear infinite;
+    }
+    @keyframes ludoDiceFloat {
+      0%   { transform: translateY(0px) rotate(0deg);   opacity: 0; }
+      10%  { opacity: .35; }
+      90%  { opacity: .15; }
+      100% { transform: translateY(-90px) rotate(360deg); opacity: 0; }
+    }
+
+    /* token colour dots */
+    .ludo-tokens-row {
+      display: flex; gap: 5px; margin-bottom: 8px; z-index: 2; position: relative;
+    }
+    .tok-dot {
+      width: 14px; height: 14px; border-radius: 50%;
+      border: 2px solid rgba(255,255,255,.3);
+      box-shadow: 0 0 8px currentColor;
+      animation: tokPop 2s ease-in-out infinite;
+    }
+    .tok-dot:nth-child(1) { color:#ff3b3b; background:#ff3b3b; animation-delay:0s; }
+    .tok-dot:nth-child(2) { color:#1565ff; background:#1565ff; animation-delay:.3s; }
+    .tok-dot:nth-child(3) { color:#ffd600; background:#ffd600; animation-delay:.6s; }
+    .tok-dot:nth-child(4) { color:#00c853; background:#00c853; animation-delay:.9s; }
+    @keyframes tokPop {
+      0%,100% { transform: scale(1); }
+      50%      { transform: scale(1.3); }
+    }
+
+    /* main dice icon — big animated */
+    .ludo-dice-main {
+      font-size: 3.8rem;
+      display: block;
+      margin-bottom: .6rem;
+      position: relative; z-index: 2;
+      filter: drop-shadow(0 0 16px rgba(255,107,53,.8));
+      animation: ludo-dice-anim 1.8s ease-in-out infinite;
+      transform-origin: center;
+    }
+    @keyframes ludo-dice-anim {
+      0%   { transform: rotate(-8deg) scale(1);    filter: drop-shadow(0 0 12px rgba(255,107,53,.7)); }
+      25%  { transform: rotate(5deg) scale(1.12);  filter: drop-shadow(0 0 28px rgba(255,215,0,.9)); }
+      50%  { transform: rotate(-4deg) scale(1.05); filter: drop-shadow(0 0 18px rgba(255,107,53,.8)); }
+      75%  { transform: rotate(7deg) scale(1.1);   filter: drop-shadow(0 0 24px rgba(255,45,107,.7)); }
+      100% { transform: rotate(-8deg) scale(1);    filter: drop-shadow(0 0 12px rgba(255,107,53,.7)); }
+    }
+
+    /* rolled number badge */
+    .ludo-roll-badge {
+      position: absolute;
+      top: 1rem; left: 1.6rem;
+      font-family: 'Bungee', cursive;
+      font-size: .65rem; letter-spacing: .15em;
+      background: linear-gradient(135deg, #ff6b35, #ffd700);
+      color: #0b0618;
+      padding: .22rem .65rem;
+      border-radius: 50px;
+      z-index: 3;
+      animation: badgePulse 2s ease-in-out infinite;
+    }
+    @keyframes badgePulse {
+      0%,100% { box-shadow: 0 0 10px rgba(255,107,53,.5); }
+      50%      { box-shadow: 0 0 22px rgba(255,215,0,.8); }
+    }
+
+    /* track path visual */
+    .ludo-track-pill {
+      display: flex; align-items: center; gap: 4px;
+      position: absolute; bottom: 1.6rem; right: 1.4rem;
+      z-index: 2;
+    }
+    .track-step {
+      width: 7px; height: 7px; border-radius: 50%;
+      background: rgba(255,107,53,.3);
+      border: 1px solid rgba(255,107,53,.5);
+      transition: all .2s;
+    }
+    .track-step.lit { background: var(--ludo); box-shadow: 0 0 6px var(--ludo); }
+    .game-card.ludo:hover .track-step { animation: trackLight .8s ease infinite; }
+    .track-step:nth-child(1) { animation-delay: 0s; }
+    .track-step:nth-child(2) { animation-delay: .15s; }
+    .track-step:nth-child(3) { animation-delay: .3s; }
+    .track-step:nth-child(4) { animation-delay: .45s; }
+    .track-step:nth-child(5) { animation-delay: .6s; }
+    .track-step:nth-child(6) { animation-delay: .75s; }
+    @keyframes trackLight {
+      0%,100% { background: rgba(255,107,53,.3); box-shadow: none; }
+      50%      { background: var(--ludo); box-shadow: 0 0 8px var(--ludo); }
+    }
+
+    /* ludo card label overrides */
+    .game-card.ludo .card-label {
+      font-size: 1.7rem;
+      background: linear-gradient(135deg, #ff6b35, #ffd700, #ff2d6b);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+      text-shadow: none;
+      filter: drop-shadow(0 0 12px rgba(255,107,53,.5));
+      position: relative; z-index: 2;
+    }
+    .game-card.ludo .card-desc {
+      position: relative; z-index: 2;
+      color: rgba(180,160,150,.85);
+    }
+    .game-card.ludo .mode-pills { position: relative; z-index: 2; }
+    .game-card.ludo .play-btn {
+      position: relative; z-index: 2;
+      background: linear-gradient(135deg, rgba(255,107,53,.15), rgba(255,215,0,.08));
+      border-color: rgba(255,107,53,.6);
+      transition: all .25s cubic-bezier(.34,1.56,.64,1);
+    }
+    .game-card.ludo:hover .play-btn {
+      background: linear-gradient(135deg, #ff6b35, #ffd700);
+      color: #0b0618;
+      border-color: transparent;
+      box-shadow: 0 0 28px rgba(255,107,53,.6);
+      transform: scale(1.03);
+    }
+
+    /* crown badge top-right */
+    .ludo-crown {
+      position: absolute; top: 1rem; right: 1rem;
+      font-size: 1.4rem; z-index: 3;
+      animation: crownSpin 4s ease-in-out infinite;
+      filter: drop-shadow(0 0 8px rgba(255,215,0,.8));
+    }
+    @keyframes crownSpin {
+      0%,100% { transform: rotate(-8deg) scale(1); }
+      50%      { transform: rotate(8deg) scale(1.15); }
+    }
+
+    /* ripple on hover */
+    .ludo-ripple {
+      position: absolute; inset: 0; border-radius: 20px; z-index: 1; pointer-events: none;
+      background: radial-gradient(circle at var(--mx,50%) var(--my,50%), rgba(255,107,53,.08), transparent 60%);
+      opacity: 0; transition: opacity .3s;
+    }
+    .game-card.ludo:hover .ludo-ripple { opacity: 1; }
+
+    .game-card::before { background: rgba(0,0,0,0); }
+    .game-card.ttt::after      { background: var(--ttt); }
+    .game-card.ludo::after     { background: var(--ludo); }
+    .game-card.uno::after      { background: var(--uno); }
+    .game-card.imposter::after { background: var(--imposter); }
+
+    .game-card:hover { transform: translateY(-8px) scale(1.01); border-color: var(--accent); }
+    .game-card.ttt:hover      { box-shadow: var(--glow-ttt); }
+    .game-card.ludo:hover     { box-shadow: var(--glow-ludo); }
+    .game-card.uno:hover      { box-shadow: var(--glow-uno); }
+    .game-card.imposter:hover { box-shadow: var(--glow-imposter); }
+    .game-card:hover::after   { transform: scaleX(1); }
+
+    .card-icon {
+      font-size: 3.5rem; margin-bottom: 1rem; display: block;
+      filter: drop-shadow(0 0 12px var(--accent));
+      animation: iconBob 2.5s ease-in-out infinite;
+    }
+    .game-card:nth-child(2) .card-icon { animation-delay: -.8s; }
+    .game-card:nth-child(3) .card-icon { animation-delay: -1.6s; }
+    .game-card:nth-child(4) .card-icon { animation-delay: -2.4s; }
+    @keyframes iconBob { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-6px)} }
+
+    .card-label {
+      font-family: 'Bungee', cursive; font-size: 1.5rem; letter-spacing: .04em;
+      color: var(--accent); text-shadow: 0 0 20px var(--accent); margin-bottom: .5rem;
+    }
+    .card-desc { font-size: .83rem; color: var(--muted); line-height: 1.6; margin-bottom: 1.4rem; }
+
+    .mode-pills { display: flex; flex-wrap: wrap; gap: .5rem; }
+    .pill {
+      padding: .28rem .75rem; border-radius: 50px; border: 1px solid var(--border);
+      font-size: .72rem; font-weight: 600; letter-spacing: .1em; text-transform: uppercase;
+      color: var(--muted); transition: all .2s;
+    }
+    .game-card:hover .pill { border-color: var(--accent); color: var(--accent); }
+
+    .play-btn {
+      margin-top: 1.4rem; width: 100%; padding: .75rem; border-radius: 12px;
+      border: 2px solid var(--accent); background: transparent; color: var(--accent);
+      font-family: 'Bungee', cursive; font-size: 1rem; letter-spacing: .08em; cursor: pointer;
+      transition: background .25s, color .25s, box-shadow .25s;
+      display: block; text-align: center; text-decoration: none;
+    }
+    .play-btn:hover { background: var(--accent); color: var(--bg); box-shadow: 0 0 24px var(--accent); }
+
+    /* ── Badges ── */
+    .hot-badge, .new-badge {
+      position: absolute; top: 1rem; right: 1rem;
+      color: white; font-size: .65rem; font-weight: 700;
+      letter-spacing: .15em; text-transform: uppercase;
+      padding: .2rem .6rem; border-radius: 50px;
+    }
+    .hot-badge {
+      background: var(--uno); box-shadow: 0 0 12px var(--uno);
+      animation: hotPulse 1.5s ease-in-out infinite;
+    }
+    .new-badge {
+      background: var(--imposter); box-shadow: 0 0 12px var(--imposter);
+      animation: imposterPulse 1.5s ease-in-out infinite;
+    }
+    @keyframes hotPulse     { 0%,100%{box-shadow:0 0 12px var(--uno)}      50%{box-shadow:0 0 24px var(--uno)} }
+    @keyframes imposterPulse{ 0%,100%{box-shadow:0 0 12px var(--imposter)} 50%{box-shadow:0 0 28px var(--imposter)} }
+
+    /* ── Stats ── */
+    .stats-row {
+      display: flex; justify-content: center; gap: 2rem; margin-top: 2.5rem;
+      animation: slideUp .7s .3s cubic-bezier(.22,1,.36,1) both;
+    }
+    .stat { text-align: center; }
+    .stat-val {
+      font-family: 'Bungee', cursive; font-size: 1.8rem;
+      color: var(--gold); text-shadow: 0 0 20px var(--gold);
+    }
+    .stat-lbl { font-size: .7rem; letter-spacing: .15em; text-transform: uppercase; color: var(--muted); margin-top: .1rem; }
+
+    /* ── Reviews Section ── */
+    .reviews-section {
+      margin-top: 4rem;
+      width: 100%;
+      animation: slideUp .7s .45s cubic-bezier(.22,1,.36,1) both;
+    }
+    .section-heading {
+      text-align: center; margin-bottom: .5rem;
+      font-family: 'Bungee', cursive;
+      font-size: clamp(1.6rem, 5vw, 2.4rem);
+      letter-spacing: .06em;
+      background: linear-gradient(135deg, var(--gold), var(--imposter));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+    }
+    .section-sub {
+      text-align: center; font-size: .8rem; letter-spacing: .2em;
+      text-transform: uppercase; color: var(--muted); margin-bottom: 2rem;
+    }
+
+    /* Overall rating bar */
+    .overall-rating {
+      display: flex; align-items: center; justify-content: center; gap: 1.2rem;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 20px; padding: 1.6rem 2rem; margin-bottom: 2rem;
+      flex-wrap: wrap;
+    }
+    .rating-big {
+      font-family: 'Bungee', cursive; font-size: 4rem; line-height: 1;
+      color: var(--gold); text-shadow: 0 0 30px var(--gold);
+    }
+    .rating-right { display: flex; flex-direction: column; gap: .3rem; }
+    .stars-row { display: flex; gap: 3px; font-size: 1.4rem; }
+    .rating-count { font-size: .78rem; color: var(--muted); letter-spacing: .1em; }
+
+    /* Review cards */
+    .reviews-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 1.2rem;
+    }
+    .review-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 1.4rem 1.5rem;
+      transition: border-color .3s, transform .3s;
+      animation: slideUp .6s cubic-bezier(.22,1,.36,1) both;
+    }
+    .review-card:nth-child(1){ animation-delay:.1s }
+    .review-card:nth-child(2){ animation-delay:.18s }
+    .review-card:nth-child(3){ animation-delay:.26s }
+    .review-card:nth-child(4){ animation-delay:.34s }
+    .review-card:nth-child(5){ animation-delay:.42s }
+    .review-card:nth-child(6){ animation-delay:.5s }
+
+    .review-card:hover { border-color: var(--imposter); transform: translateY(-4px); }
+
+    .review-header { display: flex; align-items: center; gap: .9rem; margin-bottom: .9rem; }
+    .review-avatar {
+      width: 44px; height: 44px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.3rem; flex-shrink: 0;
+      border: 2px solid var(--border);
+    }
+    .review-meta { flex: 1; min-width: 0; }
+    .review-name { font-weight: 700; font-size: .95rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .review-game {
+      font-size: .7rem; font-weight: 600; letter-spacing: .12em; text-transform: uppercase;
+      margin-top: 2px;
+    }
+    .review-stars { display: flex; gap: 2px; font-size: .85rem; }
+    .review-text { font-size: .84rem; color: #9494bb; line-height: 1.65; }
+    .review-date { font-size: .7rem; color: var(--muted); margin-top: .7rem; }
+
+    /* Write review CTA */
+    .review-cta {
+      margin-top: 1.8rem;
+      background: linear-gradient(135deg, rgba(168,85,247,.12), rgba(255,45,107,.08));
+      border: 1px solid rgba(168,85,247,.3);
+      border-radius: 18px;
+      padding: 1.5rem 2rem;
+      display: flex; align-items: center; justify-content: space-between;
+      flex-wrap: wrap; gap: 1rem;
+    }
+    .cta-left p { color: var(--muted); font-size: .85rem; margin-top: .2rem; }
+    .cta-left strong { font-size: 1rem; color: var(--text); }
+    .btn-cta {
+      padding: .65rem 1.4rem; border-radius: 10px;
+      border: 2px solid var(--imposter); background: transparent;
+      color: var(--imposter); font-family: 'Bungee', cursive;
+      font-size: .85rem; letter-spacing: .06em; cursor: pointer;
+      transition: background .2s, color .2s, box-shadow .2s; white-space: nowrap;
+    }
+    .btn-cta:hover { background: var(--imposter); color: #fff; box-shadow: 0 0 20px var(--imposter); }
+
+    /* ── Footer ── */
+    .footer {
+      text-align: center; margin-top: 3rem;
+      font-size: .72rem; letter-spacing: .12em; text-transform: uppercase; color: var(--muted);
+      animation: slideUp .7s .5s cubic-bezier(.22,1,.36,1) both;
+    }
+
+    /* ── Particles ── */
+    .particles { position: fixed; inset: 0; pointer-events: none; z-index: 0; overflow: hidden; }
+    .particle  { position: absolute; border-radius: 50%; animation: particleRise linear infinite; }
+    @keyframes particleRise {
+      0%   { transform: translateY(100vh) scale(0); opacity: 0; }
+      10%  { opacity: .6; }
+      90%  { opacity: .3; }
+      100% { transform: translateY(-20px) scale(1); opacity: 0; }
+    }
+
+    @keyframes slideDown { from{opacity:0;transform:translateY(-30px)} to{opacity:1;transform:none} }
+    @keyframes slideUp   { from{opacity:0;transform:translateY(30px)}  to{opacity:1;transform:none} }
+
+    /* ── Review modal ── */
+    #review-modal {
+      position: fixed; inset: 0; background: rgba(0,0,0,.88);
+      backdrop-filter: blur(12px); display: none; align-items: center; justify-content: center;
+      z-index: 1000; padding: 1rem;
+    }
+    #review-modal.active { display: flex; animation: fadeIn .3s ease both; }
+    .rmodal-box {
+      background: var(--surface); border: 1px solid rgba(168,85,247,.4);
+      border-radius: 24px; padding: 2.2rem 2rem;
+      width: min(480px, 100%); display: flex; flex-direction: column; gap: 1.2rem;
+      box-shadow: 0 0 60px rgba(168,85,247,.2);
+    }
+    .rmodal-box h2 { font-family: 'Bungee'; color: var(--imposter); font-size: 1.6rem; }
+    .rmodal-box p  { font-size: .83rem; color: var(--muted); margin-top: -.6rem; }
+    .form-row { display: flex; flex-direction: column; gap: .4rem; }
+    .form-row label { font-size: .78rem; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+    .form-row input,
+    .form-row select,
+    .form-row textarea {
+      background: #0a0a1a; border: 1px solid var(--border);
+      border-radius: 10px; color: var(--text); font-family: 'Space Grotesk', sans-serif;
+      font-size: .95rem; padding: .75rem 1rem; outline: none;
+      transition: border-color .2s; resize: none;
+    }
+    .form-row input:focus,
+    .form-row select:focus,
+    .form-row textarea:focus { border-color: var(--imposter); }
+    .star-picker { display: flex; gap: .4rem; font-size: 1.6rem; cursor: pointer; }
+    .star-picker span { opacity: .35; transition: opacity .15s, transform .15s; cursor: pointer; }
+    .star-picker span.lit { opacity: 1; transform: scale(1.15); }
+    .modal-actions { display: flex; gap: .8rem; }
+    .btn-submit {
+      flex: 1; padding: .75rem; border-radius: 10px;
+      background: var(--imposter); color: #fff; border: none;
+      font-family: 'Bungee'; font-size: 1rem; letter-spacing: .06em;
+      cursor: pointer; transition: box-shadow .2s, transform .15s;
+    }
+    .btn-submit:hover { box-shadow: 0 0 20px var(--imposter); transform: scale(1.02); }
+    .btn-cancel {
+      padding: .75rem 1.4rem; border-radius: 10px;
+      background: transparent; border: 1px solid var(--border);
+      color: var(--muted); font-family: 'Bungee'; font-size: 1rem;
+      cursor: pointer; transition: border-color .2s;
+    }
+    .btn-cancel:hover { border-color: var(--text); color: var(--text); }
+
+    @keyframes fadeIn { from{opacity:0;transform:scale(.96)} to{opacity:1;transform:scale(1)} }
+
+    /* Responsive tweaks */
+    @media (max-width: 480px) {
+      .overall-rating { flex-direction: column; text-align: center; }
+      .review-cta { flex-direction: column; text-align: center; }
+    }
+  </style>
+</head>
+<body>
+  <div class="orb orb1"></div>
+  <div class="orb orb2"></div>
+  <div class="orb orb3"></div>
+  <div class="orb orb4"></div>
+  <div class="particles" id="particles"></div>
+
+  <div class="content">
+    <header class="hub-header">
+      <h1 class="hub-title">GAME HUB</h1>
+      <p class="hub-sub">Real-time multiplayer · <span>●</span> Live · Node.js + Socket.io</p>
+    </header>
+
+    <main class="game-grid">
+      <!-- Tic Tac Toe -->
+      <div class="game-card ttt" onclick="openMode('tictactoe')">
+        <span class="card-icon">✕○</span>
+        <div class="card-label">Tic Tac Toe</div>
+        <p class="card-desc">Classic 3×3 grid. Outsmart your opponent — online or on the couch.</p>
+        <div class="mode-pills">
+          <span class="pill">🌐 Public</span>
+          <span class="pill">🔐 Private</span>
+          <span class="pill">🖥 Local</span>
+        </div>
+        <div class="play-btn">Play Now →</div>
+      </div>
+
+      <!-- Ludo — enhanced card -->
+      <div class="game-card ludo" onclick="openMode('ludo')" id="ludo-card">
+        <div class="ludo-bg-cover"></div>
+        <div class="ludo-ripple" id="ludo-ripple"></div>
+
+        <!-- floating bg dice -->
+        <span class="ludo-dice-bg" style="left:8%;bottom:10%;font-size:1rem;animation-duration:5s;animation-delay:0s;">🎲</span>
+        <span class="ludo-dice-bg" style="left:55%;bottom:5%;font-size:.8rem;animation-duration:6.5s;animation-delay:1.2s;">🎲</span>
+        <span class="ludo-dice-bg" style="left:75%;bottom:15%;font-size:1.1rem;animation-duration:4.8s;animation-delay:2.5s;">🎲</span>
+        <span class="ludo-dice-bg" style="left:30%;bottom:0%;font-size:.7rem;animation-duration:7s;animation-delay:.6s;">⭐</span>
+
+        <!-- mini board SVG preview (top-right watermark) -->
+        <svg class="ludo-board-preview" viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg">
+          <rect x="0" y="0" width="60" height="60" rx="4" fill="#1a0f0a"/>
+          <rect x="0" y="0" width="24" height="24" rx="3" fill="#ff3b3b" opacity=".8"/>
+          <rect x="36" y="0" width="24" height="24" rx="3" fill="#ffd600" opacity=".8"/>
+          <rect x="0" y="36" width="24" height="24" rx="3" fill="#1565ff" opacity=".8"/>
+          <rect x="36" y="36" width="24" height="24" rx="3" fill="#00c853" opacity=".8"/>
+          <rect x="22" y="0" width="16" height="60" rx="2" fill="#fff" opacity=".12"/>
+          <rect x="0" y="22" width="60" height="16" rx="2" fill="#fff" opacity=".12"/>
+          <circle cx="30" cy="30" r="5" fill="#ffd700" opacity=".9"/>
+          <circle cx="10" cy="10" r="3.5" fill="#fff" opacity=".6"/>
+          <circle cx="50" cy="10" r="3.5" fill="#fff" opacity=".6"/>
+          <circle cx="10" cy="50" r="3.5" fill="#fff" opacity=".6"/>
+          <circle cx="50" cy="50" r="3.5" fill="#fff" opacity=".6"/>
+        </svg>
+
+        <div class="ludo-card-inner">
+          <!-- top badge -->
+          <div class="ludo-roll-badge">🎲 CLASSIC BOARD</div>
+          <div class="ludo-crown">👑</div>
+
+          <!-- spacing from badge -->
+          <div style="height:1.8rem"></div>
+
+          <!-- token colour dots -->
+          <div class="ludo-tokens-row">
+            <div class="tok-dot"></div>
+            <div class="tok-dot"></div>
+            <div class="tok-dot"></div>
+            <div class="tok-dot"></div>
+          </div>
+
+          <!-- main dice icon -->
+          <span class="ludo-dice-main">🎲</span>
+
+          <div class="card-label">LUDO</div>
+          <p class="card-desc">Roll the dice, race your tokens home, capture rivals & conquer the board! 2–4 players with bot support.</p>
+
+          <div class="mode-pills">
+            <span class="pill">🤖 vs Bot</span>
+            <span class="pill">📱 Pass &amp; Play</span>
+            <span class="pill">2–4 Players</span>
+          </div>
+
+          <div class="play-btn" style="margin-top:1.2rem">▶ Play Now</div>
+
+          <!-- animated track dots bottom-right -->
+          <div class="ludo-track-pill">
+            <div class="track-step lit"></div>
+            <div class="track-step lit"></div>
+            <div class="track-step lit"></div>
+            <div class="track-step"></div>
+            <div class="track-step"></div>
+            <div class="track-step"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- UNO -->
+      <div class="game-card uno" onclick="openMode('uno')">
+        <div class="hot-badge">🔥 HOT</div>
+        <span class="card-icon">🃏</span>
+        <div class="card-label">UNO</div>
+        <p class="card-desc">Draw twos, skips, reverses & wild cards. Shout UNO or pay the price!</p>
+        <div class="mode-pills">
+          <span class="pill">🌐 Public</span>
+          <span class="pill">🔐 Private</span>
+          <span class="pill">🖥 Local</span>
+        </div>
+        <div class="play-btn">Play Now →</div>
+      </div>
+
+      <!-- Imposter Who? -->
+      <div class="game-card imposter" onclick="openMode('imposter')">
+        <div class="new-badge">✨ NEW</div>
+        <span class="card-icon">🎭</span>
+        <div class="card-label">Imposter Who?</div>
+        <p class="card-desc">One player hides among the crowd. Give clues, spot the liar, and vote them out!</p>
+        <div class="mode-pills">
+          <span class="pill">📱 Pass &amp; Play</span>
+          <span class="pill">3–15 Players</span>
+          <span class="pill">🗂 5 Categories</span>
+        </div>
+        <div class="play-btn">Play Now →</div>
+      </div>
+    </main>
+
+    <!-- Stats -->
+    <div class="stats-row">
+      <div class="stat">
+        <div class="stat-val" id="stat-games">4</div>
+        <div class="stat-lbl">Games</div>
+      </div>
+      <div class="stat">
+        <div class="stat-val">∞</div>
+        <div class="stat-lbl">Replays</div>
+      </div>
+      <div class="stat">
+        <div class="stat-val">0ms</div>
+        <div class="stat-lbl">Regrets</div>
+      </div>
+    </div>
+
+    <!-- ── Reviews Section ── -->
+    <section class="reviews-section">
+      <h2 class="section-heading">PLAYER REVIEWS</h2>
+      <p class="section-sub">What our community is saying</p>
+
+      <div class="overall-rating">
+        <div class="rating-big">4.8</div>
+        <div class="rating-right">
+          <div class="stars-row">⭐⭐⭐⭐⭐</div>
+          <div style="font-size:.9rem;font-weight:700;margin-top:.2rem">Exceptional</div>
+          <div class="rating-count">Based on 2,400+ player ratings</div>
+        </div>
+      </div>
+
+      <div class="reviews-grid" id="reviews-grid">
+        <!-- Seeded reviews injected by JS -->
+      </div>
+
+      <div class="review-cta">
+        <div class="cta-left">
+          <strong>Enjoyed a game? Tell others! 🎉</strong>
+          <p>Your review helps more players discover the fun.</p>
+        </div>
+        <button class="btn-cta" onclick="openReviewModal()">✍️ Write a Review</button>
+      </div>
+    </section>
+
+    <footer class="footer">MULTIPLAYER GAME HUB · NODE.JS + SOCKET.IO · 2025</footer>
+  </div>
+
+  <!-- ── Review Modal ── -->
+  <div id="review-modal">
+    <div class="rmodal-box">
+      <h2>✍️ Leave a Review</h2>
+      <p>Share your experience with other players.</p>
+
+      <div class="form-row">
+        <label>Your Name</label>
+        <input type="text" id="r-name" placeholder="e.g. Alex G." maxlength="24" autocomplete="off" />
+      </div>
+
+      <div class="form-row">
+        <label>Game</label>
+        <select id="r-game">
+          <option value="Tic Tac Toe">✕○ Tic Tac Toe</option>
+          <option value="Ludo">🎲 Ludo</option>
+          <option value="UNO">🃏 UNO</option>
+          <option value="Imposter Who?">🎭 Imposter Who?</option>
+          <option value="Game Hub">⚡ Game Hub (overall)</option>
+        </select>
+      </div>
+
+      <div class="form-row">
+        <label>Rating</label>
+        <div class="star-picker" id="star-picker">
+          <span data-v="1">⭐</span>
+          <span data-v="2">⭐</span>
+          <span data-v="3">⭐</span>
+          <span data-v="4">⭐</span>
+          <span data-v="5">⭐</span>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <label>Your Review</label>
+        <textarea id="r-text" rows="3" maxlength="220" placeholder="What did you love? Any tips for other players?"></textarea>
+      </div>
+
+      <div class="modal-actions">
+        <button class="btn-cancel" onclick="closeReviewModal()">Cancel</button>
+        <button class="btn-submit" onclick="submitReview()">Post Review →</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /* ── Routing ── */
+    function openMode(game) {
+      const map = {
+        tictactoe: 'tictactoe.html',
+        ludo:      'ludo.html',
+        uno:       'uno.html',
+        imposter:  'imposter-who.html'
+      };
+      window.location.href = map[game] || 'index.html';
+    }
+
+    /* ── Floating particles ── */
+    const container = document.getElementById('particles');
+    const colors = ['#00ffcc','#ff2d6b','#ffd700','#ff6b35','#a855f7'];
+    for (let i = 0; i < 28; i++) {
+      const p = document.createElement('div');
+      p.className = 'particle';
+      const size = Math.random() * 4 + 2;
+      p.style.cssText = `
+        width:${size}px;height:${size}px;
+        background:${colors[Math.floor(Math.random()*colors.length)]};
+        left:${Math.random()*100}%;
+        animation-duration:${Math.random()*10+8}s;
+        animation-delay:-${Math.random()*10}s;
+        opacity:.5;
+      `;
+      container.appendChild(p);
+    }
+
+    /* ── Reviews data ── */
+    const gameColors = {
+      'Tic Tac Toe':  '#00ffcc',
+      'Ludo':         '#ff6b35',
+      'UNO':          '#ff2d6b',
+      'Imposter Who?':'#a855f7',
+      'Game Hub':     '#ffd700'
+    };
+
+    const seedReviews = [
+      { name:'Priya S.',  avatar:'👩🏽',  game:'Imposter Who?', stars:5, text:'Absolutely addictive at parties. My friend group could not stop playing — the bluffing is SO good. 10/10 would recommend to anyone!', date:'2 days ago' },
+      { name:'Rajan K.',  avatar:'👨🏽',  game:'UNO',           stars:5, text:'The UNO implementation is spot on. Draw-4 chaos hits different online. Best virtual card game I\'ve played.', date:'5 days ago' },
+      { name:'Meera T.',  avatar:'👩🏻',  game:'Ludo',          stars:4, text:'Great Ludo experience. Capturing opponents never gets old. Would love a dice animation tweak but overall fantastic!', date:'1 week ago' },
+      { name:'Dev P.',    avatar:'🧑🏾',  game:'Imposter Who?', stars:5, text:'The word categories are perfect. Animals round had everyone losing it when my dad gave "trunk" as a clue for elephant — imposter caught instantly 😂', date:'1 week ago' },
+      { name:'Aisha R.',  avatar:'👩🏼',  game:'Tic Tac Toe',   stars:4, text:'Super clean and fast. The online matchmaking works seamlessly. Played 30+ rounds and had zero lag.', date:'2 weeks ago' },
+      { name:'Vikram N.', avatar:'👨🏻',  game:'Game Hub',      stars:5, text:'This hub is a goldmine for game nights. No ads, no accounts, just pure fun. Adding Imposter Who? was a genius move!', date:'3 weeks ago' },
+    ];
+
+    let allReviews = [...seedReviews];
+
+    function starStr(n) {
+      return '⭐'.repeat(n) + '☆'.repeat(5 - n);
+    }
+
+    function renderReviews() {
+      const grid = document.getElementById('reviews-grid');
+      grid.innerHTML = '';
+      allReviews.slice().reverse().forEach((r, i) => {
+        const col = gameColors[r.game] || '#ffd700';
+        const card = document.createElement('div');
+        card.className = 'review-card';
+        card.style.animationDelay = `${i * 0.08}s`;
+        card.innerHTML = `
+          <div class="review-header">
+            <div class="review-avatar" style="background:${col}22;border-color:${col}55">${r.avatar}</div>
+            <div class="review-meta">
+              <div class="review-name">${r.name}</div>
+              <div class="review-game" style="color:${col}">${r.game}</div>
+            </div>
+            <div class="review-stars">${starStr(r.stars)}</div>
+          </div>
+          <div class="review-text">"${r.text}"</div>
+          <div class="review-date">${r.date}</div>
+        `;
+        grid.appendChild(card);
+      });
+    }
+
+    renderReviews();
+
+    /* ── Review modal ── */
+    let pickedStars = 5;
+
+    function openReviewModal() {
+      document.getElementById('review-modal').classList.add('active');
+      document.body.style.overflow = 'hidden';
+      setStars(5);
+    }
+    function closeReviewModal() {
+      document.getElementById('review-modal').classList.remove('active');
+      document.body.style.overflow = '';
+    }
+
+    const starPicker = document.getElementById('star-picker');
+    starPicker.querySelectorAll('span').forEach(s => {
+      s.addEventListener('click', () => setStars(+s.dataset.v));
+      s.addEventListener('mouseover', () => highlightStars(+s.dataset.v));
+      s.addEventListener('mouseout', () => highlightStars(pickedStars));
+    });
+
+    function setStars(n) {
+      pickedStars = n;
+      highlightStars(n);
+    }
+    function highlightStars(n) {
+      starPicker.querySelectorAll('span').forEach(s => {
+        s.classList.toggle('lit', +s.dataset.v <= n);
+      });
+    }
+
+    function submitReview() {
+      const name = document.getElementById('r-name').value.trim();
+      const game = document.getElementById('r-game').value;
+      const text = document.getElementById('r-text').value.trim();
+
+      if (!name) { alert('Please enter your name!'); return; }
+      if (!text || text.length < 10) { alert('Please write at least 10 characters!'); return; }
+
+      const avatars = ['🧑','👩','👨','🧑🏻','👩🏻','👨🏻','🧑🏽','👩🏽','👨🏽','🧑🏾','👩🏾','👨🏾'];
+      const newReview = {
+        name,
+        avatar: avatars[Math.floor(Math.random() * avatars.length)],
+        game,
+        stars: pickedStars,
+        text,
+        date: 'Just now'
+      };
+
+      allReviews.push(newReview);
+      renderReviews();
+      closeReviewModal();
+
+      // Reset form
+      document.getElementById('r-name').value = '';
+      document.getElementById('r-text').value = '';
+    }
+
+    // Close modal on backdrop click
+    document.getElementById('review-modal').addEventListener('click', function(e) {
+      if (e.target === this) closeReviewModal();
+    });
+
+    /* ── Ludo card mouse-tracking ripple ── */
+    const ludoCard = document.getElementById('ludo-card');
+    const ludoRipple = document.getElementById('ludo-ripple');
+    if (ludoCard && ludoRipple) {
+      ludoCard.addEventListener('mousemove', (e) => {
+        const rect = ludoCard.getBoundingClientRect();
+        const x = ((e.clientX - rect.left) / rect.width * 100).toFixed(1) + '%';
+        const y = ((e.clientY - rect.top)  / rect.height * 100).toFixed(1) + '%';
+        ludoRipple.style.setProperty('--mx', x);
+        ludoRipple.style.setProperty('--my', y);
+      });
+    }
+
+    /* ── Ludo track dots cycle on hover ── */
+    const trackSteps = document.querySelectorAll('.track-step');
+    let trackIdx = 3;
+    let trackTimer = null;
+    if (ludoCard) {
+      ludoCard.addEventListener('mouseenter', () => {
+        trackTimer = setInterval(() => {
+          trackSteps.forEach((s, i) => s.classList.toggle('lit', i <= trackIdx % 6));
+          trackIdx++;
+        }, 250);
+      });
+      ludoCard.addEventListener('mouseleave', () => {
+        clearInterval(trackTimer);
+        trackSteps.forEach((s, i) => s.classList.toggle('lit', i < 3));
+      });
+    }
+  </script>
+</body>
+</html>

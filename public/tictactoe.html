@@ -1,0 +1,693 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tic Tac Toe · Neon Arena</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Russo+One&family=Orbitron:wght@400;700;900&family=Exo+2:wght@400;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="tictactoe.css" />
+</head>
+<body>
+
+<div class="orb orb1"></div>
+<div class="orb orb2"></div>
+<div id="particles-bg"></div>
+
+<button id="gear-btn" title="Settings">⚙️</button>
+<div id="settings-panel">
+  <div class="setting-row"><span>🔊 Sound</span><div class="toggle on" id="tog-sfx"></div></div>
+  <div class="setting-row"><span>📳 Vibration</span><div class="toggle on" id="tog-vib"></div></div>
+  <div class="setting-row"><span>💡 Best-move hints</span><div class="toggle" id="tog-hints"></div></div>
+  <div class="setting-row"><span>⏱️ Turn timer</span><div class="toggle" id="tog-timer"></div></div>
+  <div class="settings-link" id="link-rules">📖 Rules</div>
+  <div class="settings-link" id="link-exit" style="color:var(--o)">🚪 Leave</div>
+</div>
+
+<div class="wrap">
+  <!-- LOBBY -->
+  <div id="lobby">
+    <h1 class="lobby-title">✕ TIC TAC TOE ○</h1>
+    <a class="back-link" href="index.html">← Game Hub</a>
+    <div id="error-msg" style="display:none;padding:.5rem;border-radius:8px;background:rgba(255,45,149,.15);border:1px solid var(--o);color:var(--o);font-size:.85rem;text-align:center"></div>
+
+    <div id="mode-select">
+      <div class="mode-card" data-mode="cpu">
+        <h3>🤖 vs CPU</h3>
+        <p>Battle the AI — easy, medium, or brutal.</p>
+      </div>
+      <div class="mode-card" data-mode="local">
+        <h3>🖥️ Local 2P</h3>
+        <p>Pass the device with a friend on the couch.</p>
+      </div>
+      <div class="mode-card" data-mode="public">
+        <h3>🌐 Online Match</h3>
+        <p>Instant matchmaking with a random player.</p>
+      </div>
+      <div class="mode-card" data-mode="friend">
+        <h3>👥 Private Room</h3>
+        <p>Host or join with a room code.</p>
+      </div>
+    </div>
+
+    <div id="cpu-panel" class="sub-panel">
+      <p style="text-align:center;color:var(--muted);font-size:.85rem">CPU difficulty</p>
+      <div class="diff-grid">
+        <button type="button" class="diff-btn" data-diff="easy">Easy</button>
+        <button type="button" class="diff-btn selected" data-diff="medium">Medium</button>
+        <button type="button" class="diff-btn" data-diff="hard">Hard</button>
+      </div>
+      <button type="button" class="primary-btn" id="btn-cpu-start">Play →</button>
+      <button type="button" class="primary-btn secondary" id="btn-cpu-back">← Back</button>
+    </div>
+
+    <div id="friend-panel" class="sub-panel">
+      <button type="button" class="sub-btn" id="btn-host" style="width:100%;padding:.75rem;border-radius:10px;border:1px solid var(--border);background:var(--panel);color:var(--text);cursor:pointer;font-weight:600">🏠 Host Room</button>
+      <input class="code-input" id="join-input" maxlength="5" placeholder="CODE" />
+      <button type="button" class="primary-btn" id="btn-join-submit" style="width:100%">Join Room</button>
+      <button type="button" class="primary-btn secondary" id="btn-friend-back">← Back</button>
+    </div>
+  </div>
+
+  <!-- WAITING -->
+  <div id="waiting-screen">
+    <h1 class="lobby-title" style="font-size:1.6rem">Finding Opponent</h1>
+    <div class="searching-grid" style="width:72px;height:72px;display:grid;grid-template-columns:repeat(3,1fr);gap:4px">
+      <div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div>
+    </div>
+    <p id="wait-label" style="color:var(--muted);text-align:center;font-size:.85rem;text-transform:uppercase;letter-spacing:.1em"></p>
+    <div id="room-code-wrap" style="display:none;flex-direction:column;align-items:center;gap:.5rem">
+      <p style="font-size:.75rem;color:var(--muted)">ROOM CODE</p>
+      <div class="room-code-display" id="room-code-display">-----</div>
+      <button type="button" class="primary-btn secondary" id="copy-btn" style="font-size:.75rem;padding:.4rem 1rem">Copy</button>
+    </div>
+    <button type="button" class="primary-btn danger" id="btn-cancel">Cancel</button>
+  </div>
+
+  <!-- GAME -->
+  <div id="game-screen">
+    <h1 class="lobby-title" style="font-size:1.4rem">NEON ARENA</h1>
+
+    <div class="score-bar">
+      <div class="stat-chip">🔥 Streak <b id="stat-streak">0</b></div>
+      <div class="stat-chip">✅ Wins <b id="stat-wins">0</b></div>
+      <div class="stat-chip">📊 Played <b id="stat-played">0</b></div>
+    </div>
+
+    <p id="status" class="info">Get ready…</p>
+
+    <div class="cpu-thinking" id="cpu-thinking">
+      <span>CPU thinking</span>
+      <div class="cpu-dot"></div><div class="cpu-dot"></div><div class="cpu-dot"></div>
+    </div>
+
+    <div class="badges">
+      <div class="badge" id="badge-x"><span class="sym">✕</span><span class="lbl" id="lbl-x">Player X</span></div>
+      <div class="badge" id="badge-o"><span class="sym">○</span><span class="lbl" id="lbl-o">Player O</span></div>
+    </div>
+
+    <div id="timer-bar"><div id="timer-fill"></div></div>
+
+    <div class="board-frame" id="board-frame">
+      <div id="board">
+        <svg id="win-line" viewBox="0 0 300 300" preserveAspectRatio="none"><line id="win-line-el" x1="0" y1="0" x2="0" y2="0"/></svg>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<div id="overlay">
+  <div class="ov-box">
+    <h2 id="ov-title">Victory!</h2>
+    <p id="ov-msg" style="color:var(--muted);margin:.8rem 0"></p>
+    <div class="ov-btns">
+      <button type="button" class="primary-btn" id="btn-rematch">⚡ Rematch</button>
+      <button type="button" class="primary-btn secondary" onclick="location.reload()">Menu</button>
+      <button type="button" class="primary-btn danger" onclick="location.href='index.html'">Hub</button>
+    </div>
+  </div>
+</div>
+
+<div id="rules-overlay">
+  <div class="rules-box">
+    <h2>How to Play</h2>
+    <p>Get <b>three in a row</b> — across, down, or diagonal — before your opponent.</p>
+    <p><b>✕</b> goes first. Take turns tapping an empty cell.</p>
+    <p>Block their line while building yours. First to three wins!</p>
+    <p><b>CPU modes:</b> Easy makes mistakes. Hard plays perfectly.</p>
+    <button type="button" class="primary-btn" style="width:100%;margin-top:1rem" id="btn-rules-close">Let's go!</button>
+  </div>
+</div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+const socket = io();
+const WIN_LINES = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
+
+let mode = null;
+let mySymbol = null;
+let myTurn = false;
+let gameActive = false;
+let myRoomId = null;
+let isOnline = false;
+let board = Array(9).fill(null);
+let currentPlayer = 'X';
+let cpuDiff = 'medium';
+let timerIv = null;
+let timerLeft = 15;
+
+const stats = JSON.parse(localStorage.getItem('tttStats') || '{"wins":0,"played":0,"streak":0}');
+const settings = { sfx: true, vibration: true, hints: false, timer: false };
+
+const $ = (id) => document.getElementById(id);
+
+// ── Particles ──
+(function () {
+  const c = $('particles-bg');
+  const colors = ['#00f5ff', '#ff2d95', '#ffd700', '#a855f7'];
+  for (let i = 0; i < 35; i++) {
+    const p = document.createElement('div');
+    p.className = 'particle';
+    const s = Math.random() * 5 + 2;
+    p.style.cssText = `width:${s}px;height:${s}px;left:${Math.random()*100}%;background:${colors[i%4]};animation-duration:${8+Math.random()*12}s;animation-delay:-${Math.random()*12}s`;
+    c.appendChild(p);
+  }
+})();
+
+// ── Audio ──
+const AudioCtx = window.AudioContext || window.webkitAudioContext;
+let actx = null;
+function getActx() { if (!actx) actx = new AudioCtx(); if (actx.state === 'suspended') actx.resume(); return actx; }
+function beep(f, t, d, v) {
+  if (!settings.sfx) return;
+  try {
+    const c = getActx(), o = c.createOscillator(), g = c.createGain();
+    o.connect(g); g.connect(c.destination);
+    o.type = t; o.frequency.value = f;
+    g.gain.setValueAtTime(v, c.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001, c.currentTime + d);
+    o.start(); o.stop(c.currentTime + d);
+  } catch (e) {}
+}
+const SFX = {
+  placeX: () => { beep(880, 'square', 0.08, 0.12); setTimeout(() => beep(1100, 'square', 0.06, 0.08), 50); },
+  placeO: () => { beep(440, 'sine', 0.1, 0.12); setTimeout(() => beep(330, 'sine', 0.08, 0.08), 60); },
+  win: () => [523, 659, 784, 1047, 1319].forEach((f, i) => setTimeout(() => beep(f, 'square', 0.15, 0.14), i * 90)),
+  lose: () => [330, 280, 220].forEach((f, i) => setTimeout(() => beep(f, 'sawtooth', 0.18, 0.1), i * 100)),
+  draw: () => beep(400, 'triangle', 0.2, 0.1),
+  tick: () => beep(1200, 'sine', 0.03, 0.05),
+};
+function vibrate(p) { if (settings.vibration && navigator.vibrate) navigator.vibrate(p); }
+
+// ── Settings ──
+function bindToggle(id, key) {
+  $(id).addEventListener('click', () => {
+    settings[key] = !settings[key];
+    $(id).classList.toggle('on', settings[key]);
+    localStorage.setItem('tttSettings', JSON.stringify(settings));
+    if (key === 'timer') stopTimer();
+  });
+}
+try { Object.assign(settings, JSON.parse(localStorage.getItem('tttSettings') || '{}')); } catch (e) {}
+bindToggle('tog-sfx', 'sfx');
+bindToggle('tog-vib', 'vibration');
+bindToggle('tog-hints', 'hints');
+bindToggle('tog-timer', 'timer');
+['tog-sfx','tog-vib','tog-hints','tog-timer'].forEach(id => {
+  const k = id.replace('tog-','');
+  if (settings[k]) $(id).classList.add('on');
+});
+$('gear-btn').onclick = (e) => { e.stopPropagation(); $('settings-panel').classList.toggle('open'); };
+document.addEventListener('click', () => $('settings-panel').classList.remove('open'));
+$('settings-panel').onclick = (e) => e.stopPropagation();
+$('link-rules').onclick = () => { $('rules-overlay').classList.add('show'); $('settings-panel').classList.remove('open'); };
+$('btn-rules-close').onclick = () => $('rules-overlay').classList.remove('show');
+$('link-exit').onclick = () => { if (confirm('Leave game?')) location.href = 'index.html'; };
+
+function updateStatsDisplay() {
+  $('stat-streak').textContent = stats.streak;
+  $('stat-wins').textContent = stats.wins;
+  $('stat-played').textContent = stats.played;
+}
+updateStatsDisplay();
+
+// ── Board build ──
+const boardEl = $('board');
+const cells = [];
+for (let i = 0; i < 9; i++) {
+  const c = document.createElement('div');
+  c.className = 'cell';
+  c.dataset.index = i;
+  c.addEventListener('click', onCellClick);
+  boardEl.appendChild(c);
+  cells.push(c);
+}
+
+// ── Game logic ──
+function checkResult(b) {
+  for (const line of WIN_LINES) {
+    const [a, x, c] = line;
+    if (b[a] && b[a] === b[x] && b[a] === b[c]) return { winner: b[a], line };
+  }
+  if (b.every(Boolean)) return { winner: 'draw' };
+  return null;
+}
+
+function getBestMove(b, ai, depth, maximizing) {
+  const r = checkResult(b);
+  if (r?.winner === ai) return { score: 10 - depth };
+  if (r?.winner && r.winner !== 'draw') return { score: depth - 10 };
+  if (r?.winner === 'draw') return { score: 0 };
+  const human = ai === 'X' ? 'O' : 'X';
+  let best = maximizing ? { score: -99, index: -1 } : { score: 99, index: -1 };
+  for (let i = 0; i < 9; i++) {
+    if (b[i]) continue;
+    b[i] = maximizing ? ai : human;
+    const sc = getBestMove(b, ai, depth + 1, !maximizing).score;
+    b[i] = null;
+    if (maximizing) {
+      if (sc > best.score) best = { score: sc, index: i };
+    } else if (sc < best.score) {
+      best = { score: sc, index: i };
+    }
+  }
+  return best;
+}
+
+function cpuPick() {
+  const ai = mySymbol === 'X' ? 'O' : 'X';
+  const empty = board.map((v, i) => v ? null : i).filter(i => i !== null);
+  if (cpuDiff === 'easy') {
+    if (Math.random() < 0.4) return empty[Math.floor(Math.random() * empty.length)];
+  }
+  if (cpuDiff === 'medium' && Math.random() < 0.25) {
+    return empty[Math.floor(Math.random() * empty.length)];
+  }
+  return getBestMove([...board], ai, 0, true).index;
+}
+
+function applyMove(index, sym) {
+  board[index] = sym;
+  renderBoard(board);
+  SFX[sym === 'X' ? 'placeX' : 'placeO']();
+  vibrate([12]);
+  const r = checkResult(board);
+  if (r) return endGame(r, index);
+  currentPlayer = currentPlayer === 'X' ? 'O' : 'X';
+  updateTurnUI();
+  if (mode === 'cpu' && currentPlayer !== mySymbol) {
+    $('cpu-thinking').classList.add('show');
+    boardEl.querySelectorAll('.cell').forEach(c => c.classList.add('disabled'));
+    setTimeout(() => {
+      $('cpu-thinking').classList.remove('show');
+      const pick = cpuPick();
+      if (pick != null) applyMove(pick, currentPlayer);
+      boardEl.querySelectorAll('.cell').forEach(c => c.classList.remove('disabled'));
+    }, 500 + Math.random() * 400);
+  }
+  return null;
+}
+
+function endGame(r, lastIndex) {
+  gameActive = false;
+  stopTimer();
+  boardEl.querySelectorAll('.cell').forEach(c => c.classList.add('disabled'));
+  if (r.line) {
+    drawWinLine(r.line);
+    r.line.forEach(i => cells[i].classList.add('win-cell'));
+  }
+  stats.played++;
+  let won = false;
+  if (r.winner === 'draw') {
+    stats.streak = 0;
+    SFX.draw();
+    showOverlay("Draw! 🤝", "Nobody takes the crown this round.");
+    showToast("DRAW");
+  } else {
+    const iWon = (mode === 'cpu' && r.winner === mySymbol) ||
+      (mode === 'local') ||
+      (isOnline && ((r.winner === 'X' && mySymbol === 'X') || (r.winner === 'O' && mySymbol === 'O')));
+    if (mode === 'local') {
+      SFX.win();
+      spawnConfetti();
+      showOverlay(`${r.winner} Wins! 🎉`, `Three in a row for player ${r.winner}.`);
+      showToast('GG!');
+      return;
+    }
+
+    won = mode === 'cpu' ? r.winner === mySymbol : r.winner === mySymbol;
+    if (won) {
+      stats.wins++;
+      stats.streak++;
+      SFX.win();
+      vibrate([40, 20, 40, 20, 60]);
+      spawnConfetti();
+      document.body.classList.add('shake');
+      setTimeout(() => document.body.classList.remove('shake'), 400);
+      showOverlay('🏆 VICTORY!', getWinMessage());
+      showToast(['INSANE!','CLUTCH!','GG!','DOMINANT!'][Math.floor(Math.random()*4)]);
+    } else {
+      stats.streak = 0;
+      SFX.lose();
+      showOverlay('Defeated', getLoseMessage());
+    }
+  }
+  localStorage.setItem('tttStats', JSON.stringify(stats));
+  updateStatsDisplay();
+}
+
+function getWinMessage() {
+  if (mode === 'cpu') return `You crushed the ${cpuDiff} CPU!`;
+  if (mode === 'local') return `${currentPlayer === 'X' ? 'O' : 'X'} wins — rematch?`;
+  return `You played ${mySymbol} and won!`;
+}
+function getLoseMessage() {
+  if (mode === 'cpu') return 'The CPU got you this time.';
+  return 'Better luck next round!';
+}
+
+function drawWinLine(line) {
+  const svg = $('win-line');
+  const el = $('win-line-el');
+  const size = 300;
+  const gap = 10;
+  const cell = (size - 2 * gap) / 3;
+  const center = (i) => gap + (i % 3) * (cell + gap) + cell / 2;
+  const row = (i) => gap + Math.floor(i / 3) * (cell + gap) + cell / 2;
+  const [a, b, c] = line;
+  el.setAttribute('x1', center(a));
+  el.setAttribute('y1', row(a));
+  el.setAttribute('x2', center(c));
+  el.setAttribute('y2', row(c));
+  svg.style.display = 'block';
+}
+
+function renderBoard(b) {
+  cells.forEach((cell, i) => {
+    const v = b[i];
+    cell.textContent = v === 'X' ? '✕' : v === 'O' ? '○' : '';
+    cell.className = 'cell' + (v ? ` taken ${v === 'X' ? 'x-cell' : 'o-cell'}` : '');
+    cell.classList.remove('hint', 'win-cell');
+  });
+  if (settings.hints && gameActive && canPlay()) showHints();
+}
+
+function showHints() {
+  const sym = isOnline ? mySymbol : (mode === 'cpu' ? mySymbol : currentPlayer);
+  if (!sym) return;
+  const best = getBestMove([...board], sym, 0, true).index;
+  if (best >= 0) cells[best].classList.add('hint');
+}
+
+function canPlay() {
+  if (mode === 'cpu') return currentPlayer === mySymbol;
+  if (mode === 'local') return true;
+  return myTurn && gameActive;
+}
+
+function onCellClick(e) {
+  if (!gameActive) return;
+  const idx = parseInt(e.currentTarget.dataset.index, 10);
+  if (board[idx]) return;
+
+  if (isOnline) {
+    if (!myTurn) return;
+    socket.emit('tttMove', { index: idx });
+    return;
+  }
+
+  if (mode === 'cpu' && currentPlayer !== mySymbol) return;
+  const sym = mode === 'local' ? currentPlayer : mySymbol;
+  applyMove(idx, sym);
+}
+
+function updateTurnUI() {
+  const isXTurn = currentPlayer === 'X';
+  if (mode === 'local') {
+    setStatus(`${currentPlayer}'s turn — place ${currentPlayer === 'X' ? '✕' : '○'}`, isXTurn ? 'my-turn' : 'opp-turn');
+    $('badge-x').classList.toggle('active', isXTurn);
+    $('badge-o').classList.toggle('active', !isXTurn);
+    $('board-frame').classList.toggle('my-turn-glow', true);
+    startTimerIfEnabled();
+    return;
+  }
+  if (mode === 'cpu') {
+    const mine = currentPlayer === mySymbol;
+    setStatus(mine ? 'YOUR TURN — strike now!' : 'CPU is thinking…', mine ? 'my-turn' : 'opp-turn');
+    $('badge-x').classList.toggle('active', mySymbol === 'X' && mine);
+    $('badge-o').classList.toggle('active', mySymbol === 'O' && mine);
+    $('board-frame').classList.toggle('my-turn-glow', mine);
+    if (mine) startTimerIfEnabled(); else stopTimer();
+    return;
+  }
+}
+
+function setStatus(msg, cls) {
+  $('status').textContent = msg;
+  $('status').className = cls || 'info';
+}
+
+function startTimerIfEnabled() {
+  stopTimer();
+  if (!settings.timer || !gameActive) { $('timer-bar').classList.remove('show'); return; }
+  $('timer-bar').classList.add('show');
+  timerLeft = 15;
+  $('timer-fill').style.width = '100%';
+  timerIv = setInterval(() => {
+    timerLeft -= 0.1;
+    $('timer-fill').style.width = (timerLeft / 15 * 100) + '%';
+    if (timerLeft <= 3) beep(800, 'sine', 0.03, 0.04);
+    if (timerLeft <= 0) {
+      stopTimer();
+      if (mode === 'local') {
+        currentPlayer = currentPlayer === 'X' ? 'O' : 'X';
+        updateTurnUI();
+        showToast('Time up!');
+      } else if (mode === 'cpu') {
+        showToast('Time up!');
+        const pick = cpuPick();
+        if (pick != null) applyMove(pick, currentPlayer);
+      }
+    }
+  }, 100);
+}
+function stopTimer() {
+  if (timerIv) clearInterval(timerIv);
+  timerIv = null;
+  $('timer-bar').classList.remove('show');
+}
+
+function startLocal() {
+  mode = 'local';
+  isOnline = false;
+  board = Array(9).fill(null);
+  currentPlayer = 'X';
+  gameActive = true;
+  mySymbol = 'X';
+  $('lbl-x').textContent = 'Player 1';
+  $('lbl-o').textContent = 'Player 2';
+  showGame();
+  renderBoard(board);
+  updateTurnUI();
+  setStatus('Player X starts!', 'my-turn');
+  SFX.tick();
+}
+
+function startCpu() {
+  mode = 'cpu';
+  isOnline = false;
+  board = Array(9).fill(null);
+  currentPlayer = 'X';
+  gameActive = true;
+  mySymbol = 'X';
+  $('lbl-x').textContent = 'You';
+  $('lbl-o').textContent = 'CPU';
+  showGame();
+  renderBoard(board);
+  updateTurnUI();
+  vibrate([20]);
+}
+
+function showGame() {
+  $('lobby').style.display = 'none';
+  $('waiting-screen').classList.remove('show');
+  $('game-screen').classList.add('show');
+  $('win-line').style.display = 'none';
+  $('win-line-el').setAttribute('stroke-dashoffset', '400');
+}
+
+function showPanel(id) {
+  $('mode-select').style.display = id === 'mode' ? 'block' : 'none';
+  $('cpu-panel').classList.toggle('show', id === 'cpu');
+  $('friend-panel').classList.toggle('show', id === 'friend');
+}
+
+document.querySelectorAll('[data-mode]').forEach(card => {
+  card.onclick = () => {
+    const m = card.dataset.mode;
+    SFX.tick();
+    if (m === 'cpu') showPanel('cpu');
+    else if (m === 'friend') showPanel('friend');
+    else if (m === 'local') startLocal();
+    else if (m === 'public') {
+      isOnline = true;
+      mode = 'public';
+      socket.emit('joinPublic', { gameType: 'tictactoe' });
+      showWaiting('Searching for opponent…', false);
+    }
+  };
+});
+
+document.querySelectorAll('.diff-btn').forEach(btn => {
+  btn.onclick = () => {
+    document.querySelectorAll('.diff-btn').forEach(b => b.classList.remove('selected'));
+    btn.classList.add('selected');
+    cpuDiff = btn.dataset.diff;
+  };
+});
+$('btn-cpu-start').onclick = () => startCpu();
+$('btn-cpu-back').onclick = () => showPanel('mode');
+$('btn-friend-back').onclick = () => showPanel('mode');
+
+$('btn-host').onclick = () => {
+  isOnline = true;
+  mode = 'friend';
+  socket.emit('hostRoom', { gameType: 'tictactoe' });
+};
+$('btn-join-submit').onclick = () => {
+  const code = $('join-input').value.trim().toUpperCase();
+  if (code.length < 2) return showError('Enter a valid code.');
+  isOnline = true;
+  mode = 'friend';
+  socket.emit('joinRoom', { roomId: code, gameType: 'tictactoe' });
+};
+$('btn-cancel').onclick = () => location.reload();
+$('copy-btn').onclick = () => navigator.clipboard?.writeText(myRoomId);
+
+function showError(msg) {
+  const el = $('error-msg');
+  el.textContent = msg;
+  el.style.display = msg ? 'block' : 'none';
+}
+function showWaiting(label, code) {
+  $('lobby').style.display = 'none';
+  $('waiting-screen').classList.add('show');
+  $('wait-label').textContent = label;
+  $('room-code-wrap').style.display = code ? 'flex' : 'none';
+}
+
+function showOverlay(title, msg) {
+  $('ov-title').textContent = title;
+  $('ov-msg').textContent = msg;
+  $('overlay').classList.add('show');
+}
+function showToast(t) {
+  const el = $('toast');
+  el.textContent = t;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 1200);
+}
+function spawnConfetti() {
+  const colors = ['#00f5ff', '#ff2d95', '#ffd700', '#a855f7'];
+  for (let i = 0; i < 55; i++) {
+    const p = document.createElement('div');
+    p.className = 'confetti';
+    p.style.cssText = `left:${Math.random()*100}%;top:-5px;width:${6+Math.random()*8}px;height:${6+Math.random()*8}px;background:${colors[i%4]};border-radius:${Math.random()>.5?'50%':'2px'}`;
+    document.body.appendChild(p);
+    setTimeout(() => p.remove(), 2500);
+  }
+}
+
+$('btn-rematch').onclick = () => {
+  $('overlay').classList.remove('show');
+  if (isOnline) socket.emit('tttRematch');
+  else if (mode === 'cpu') startCpu();
+  else if (mode === 'local') startLocal();
+};
+
+// ── Socket ──
+socket.on('roomCreated', ({ roomId }) => {
+  myRoomId = roomId;
+  $('room-code-display').textContent = roomId;
+  showWaiting('Share code with friend', true);
+});
+socket.on('lobbyWaiting', () => showWaiting('Searching…', false));
+socket.on('lobbyPaired', () => { $('wait-label').textContent = 'Opponent found!'; });
+socket.on('playerJoined', ({ count, max }) => {
+  $('wait-label').textContent = `${count}/${max} players`;
+});
+socket.on('roomError', ({ msg }) => showError(msg));
+
+socket.on('gameStart', ({ board: b, currentTurn, symbols }) => {
+  mySymbol = symbols[socket.id];
+  gameActive = true;
+  board = b;
+  $('lbl-x').textContent = mySymbol === 'X' ? 'You' : 'Opponent';
+  $('lbl-o').textContent = mySymbol === 'O' ? 'You' : 'Opponent';
+  showGame();
+  renderBoard(board);
+  myTurn = currentTurn === socket.id;
+  setStatus(myTurn ? 'YOUR TURN — make it count!' : 'Opponent thinking…', myTurn ? 'my-turn' : 'opp-turn');
+  $('badge-x').classList.toggle('active', mySymbol === 'X' && myTurn);
+  $('badge-o').classList.toggle('active', mySymbol === 'O' && myTurn);
+  $('board-frame').classList.toggle('my-turn-glow', myTurn);
+  if (myTurn) startTimerIfEnabled();
+  vibrate([25]);
+});
+
+socket.on('tttUpdate', ({ board: b, currentTurn, lastIndex }) => {
+  board = b;
+  renderBoard(board);
+  myTurn = currentTurn === socket.id;
+  setStatus(myTurn ? 'YOUR TURN!' : 'Opponent\'s turn', myTurn ? 'my-turn' : 'opp-turn');
+  $('badge-x').classList.toggle('active', (mySymbol === 'X' && myTurn) || (!myTurn && mySymbol === 'O'));
+  $('badge-o').classList.toggle('active', (mySymbol === 'O' && myTurn) || (!myTurn && mySymbol === 'X'));
+  $('board-frame').classList.toggle('my-turn-glow', myTurn);
+  if (myTurn) startTimerIfEnabled(); else stopTimer();
+  if (lastIndex != null) {
+    const sym = board[lastIndex];
+    SFX[sym === 'X' ? 'placeX' : 'placeO']();
+    vibrate([10]);
+  }
+});
+
+socket.on('gameOver', ({ winner, symbol, winLine }) => {
+  gameActive = false;
+  stopTimer();
+  if (winLine) {
+    drawWinLine(winLine);
+    winLine.forEach(i => cells[i].classList.add('win-cell'));
+  }
+  stats.played++;
+  if (winner === null) {
+    stats.streak = 0;
+    SFX.draw();
+    showOverlay('Draw! 🤝', 'Evenly matched.');
+  } else if (winner === socket.id) {
+    stats.wins++;
+    stats.streak++;
+    SFX.win();
+    vibrate([50, 30, 50]);
+    spawnConfetti();
+    showOverlay('🏆 YOU WIN!', `Played as ${symbol} — flawless!`);
+    showToast('VICTORY!');
+  } else {
+    stats.streak = 0;
+    SFX.lose();
+    showOverlay('Defeated', `Opponent won with ${symbol}.`);
+  }
+  localStorage.setItem('tttStats', JSON.stringify(stats));
+  updateStatsDisplay();
+});
+
+socket.on('gameReset', ({ reason }) => {
+  gameActive = false;
+  setStatus(reason, 'info');
+});
+
+document.addEventListener('click', () => getActx(), { once: true });
+</script>
+</body>
+</html>

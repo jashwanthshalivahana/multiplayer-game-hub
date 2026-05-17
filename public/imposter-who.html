@@ -1,0 +1,761 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>Imposter Who?</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Fredoka+One&display=swap');
+
+  :root {
+    --bg:        #0d0d1a;
+    --surface:   #161628;
+    --card:      #1e1e38;
+    --border:    #2e2e55;
+    --accent1:   #ff4d6d;
+    --accent2:   #4cc9f0;
+    --accent3:   #f8961e;
+    --accent4:   #7b2fff;
+    --green:     #43e97b;
+    --text:      #f0f0ff;
+    --muted:     #888aaa;
+    --radius:    18px;
+    --shadow:    0 8px 32px rgba(0,0,0,0.5);
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body {
+    width: 100%; min-height: 100%;
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Nunito', sans-serif;
+    overflow-x: hidden;
+  }
+
+  /* ── starfield bg ── */
+  body::before {
+    content: '';
+    position: fixed; inset: 0; z-index: 0;
+    background:
+      radial-gradient(ellipse 80% 60% at 20% 10%, rgba(123,47,255,.18) 0%, transparent 60%),
+      radial-gradient(ellipse 60% 50% at 80% 90%, rgba(255,77,109,.14) 0%, transparent 60%),
+      radial-gradient(ellipse 50% 40% at 60% 50%, rgba(76,201,240,.08) 0%, transparent 60%);
+    pointer-events: none;
+  }
+
+  #app {
+    position: relative; z-index: 1;
+    min-height: 100dvh;
+    display: flex; flex-direction: column; align-items: center;
+    padding: 0 0 40px;
+  }
+
+  /* ── screens ── */
+  .screen {
+    width: 100%; max-width: 520px;
+    padding: 28px 20px;
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+    animation: fadeUp .35s ease both;
+  }
+  .screen.active { display: flex; }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(24px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ── header / logo ── */
+  .logo {
+    font-family: 'Fredoka One', cursive;
+    font-size: clamp(2rem, 9vw, 3rem);
+    background: linear-gradient(135deg, var(--accent1), var(--accent4), var(--accent2));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    line-height: 1.1;
+    text-align: center;
+    letter-spacing: .5px;
+  }
+  .logo span { display: block; font-size: .45em; letter-spacing: 3px; text-transform: uppercase; margin-bottom: 4px; }
+
+  .tagline {
+    font-size: .9rem; color: var(--muted); text-align: center; margin-top: -10px;
+  }
+
+  /* ── card ── */
+  .card {
+    width: 100%;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 22px 20px;
+    box-shadow: var(--shadow);
+  }
+  .card-title {
+    font-size: 1rem; font-weight: 700; color: var(--muted);
+    text-transform: uppercase; letter-spacing: 2px;
+    margin-bottom: 14px;
+  }
+
+  /* ── player list ── */
+  .player-list { display: flex; flex-direction: column; gap: 10px; }
+  .player-row {
+    display: flex; align-items: center; gap: 10px;
+  }
+  .player-row input {
+    flex: 1;
+    background: var(--surface);
+    border: 1.5px solid var(--border);
+    border-radius: 12px;
+    color: var(--text);
+    font-family: inherit;
+    font-size: 1rem; font-weight: 600;
+    padding: 12px 16px;
+    outline: none;
+    transition: border-color .2s;
+  }
+  .player-row input:focus { border-color: var(--accent4); }
+  .player-row input::placeholder { color: var(--muted); font-weight: 400; }
+
+  .btn-icon {
+    width: 42px; height: 42px; flex-shrink: 0;
+    border: none; border-radius: 12px; cursor: pointer;
+    font-size: 1.2rem; display: flex; align-items: center; justify-content: center;
+    transition: transform .15s, opacity .15s;
+    font-weight: 700;
+  }
+  .btn-icon:active { transform: scale(.88); }
+  .btn-remove { background: rgba(255,77,109,.18); color: var(--accent1); }
+  .btn-add {
+    width: 100%; height: 46px; border-radius: 12px;
+    background: rgba(123,47,255,.18); color: var(--accent4);
+    border: 1.5px dashed var(--accent4);
+    font-family: inherit; font-size: 1rem; font-weight: 700;
+    cursor: pointer; transition: background .2s, transform .15s;
+  }
+  .btn-add:hover { background: rgba(123,47,255,.28); }
+  .btn-add:active { transform: scale(.97); }
+
+  /* ── select ── */
+  .styled-select {
+    width: 100%;
+    background: var(--surface);
+    border: 1.5px solid var(--border);
+    border-radius: 12px;
+    color: var(--text);
+    font-family: inherit;
+    font-size: 1rem; font-weight: 600;
+    padding: 13px 16px;
+    outline: none;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23888aaa' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 14px center;
+    cursor: pointer;
+  }
+
+  /* ── primary button ── */
+  .btn-primary {
+    width: 100%;
+    padding: 17px 24px;
+    border: none; border-radius: 14px;
+    font-family: inherit; font-size: 1.15rem; font-weight: 800;
+    cursor: pointer;
+    letter-spacing: .5px;
+    transition: transform .15s, box-shadow .15s;
+    position: relative; overflow: hidden;
+  }
+  .btn-primary:active { transform: scale(.96); box-shadow: none !important; }
+
+  .btn-red {
+    background: linear-gradient(135deg, #ff4d6d, #c9184a);
+    color: #fff;
+    box-shadow: 0 6px 24px rgba(255,77,109,.45);
+  }
+  .btn-purple {
+    background: linear-gradient(135deg, #7b2fff, #4c0bc0);
+    color: #fff;
+    box-shadow: 0 6px 24px rgba(123,47,255,.45);
+  }
+  .btn-teal {
+    background: linear-gradient(135deg, #4cc9f0, #0096c7);
+    color: #fff;
+    box-shadow: 0 6px 24px rgba(76,201,240,.35);
+  }
+  .btn-green {
+    background: linear-gradient(135deg, #43e97b, #1a8a4a);
+    color: #fff;
+    box-shadow: 0 6px 24px rgba(67,233,123,.35);
+  }
+  .btn-orange {
+    background: linear-gradient(135deg, #f8961e, #c06000);
+    color: #fff;
+    box-shadow: 0 6px 24px rgba(248,150,30,.35);
+  }
+  .btn-ghost {
+    background: var(--card);
+    border: 1.5px solid var(--border);
+    color: var(--muted);
+    box-shadow: none;
+  }
+
+  /* ── error ── */
+  .error-msg {
+    font-size: .88rem; color: var(--accent1); font-weight: 700;
+    text-align: center; min-height: 20px;
+    animation: shake .3s ease;
+  }
+  @keyframes shake {
+    0%,100%{transform:translateX(0)} 25%{transform:translateX(-6px)} 75%{transform:translateX(6px)}
+  }
+
+  /* ── pass screen ── */
+  .big-name {
+    font-family: 'Fredoka One', cursive;
+    font-size: clamp(2.2rem, 10vw, 3.4rem);
+    text-align: center;
+    background: linear-gradient(135deg, var(--accent2), var(--accent4));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    line-height: 1.15;
+  }
+  .pass-label {
+    font-size: 1.05rem; color: var(--muted); text-align: center; font-weight: 600;
+    margin-bottom: -8px;
+  }
+  .device-icon {
+    font-size: 4rem; text-align: center;
+    animation: bounce 1.4s ease infinite;
+  }
+  @keyframes bounce {
+    0%,100%{transform:translateY(0)} 50%{transform:translateY(-10px)}
+  }
+
+  /* ── reveal screen ── */
+  .reveal-badge {
+    width: 100%;
+    border-radius: 20px;
+    padding: 32px 24px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .reveal-badge.crewmate {
+    background: linear-gradient(135deg, #0f3460, #162447);
+    border: 2px solid var(--accent2);
+    box-shadow: 0 0 40px rgba(76,201,240,.2);
+  }
+  .reveal-badge.imposter {
+    background: linear-gradient(135deg, #3d0000, #1a0000);
+    border: 2px solid var(--accent1);
+    box-shadow: 0 0 40px rgba(255,77,109,.3);
+  }
+  .reveal-emoji { font-size: 4rem; margin-bottom: 10px; }
+  .reveal-role {
+    font-family: 'Fredoka One', cursive;
+    font-size: clamp(1.5rem, 7vw, 2.2rem);
+    margin-bottom: 8px;
+  }
+  .reveal-role.crew { color: var(--accent2); }
+  .reveal-role.imp  { color: var(--accent1); animation: pulse 1.2s ease infinite; }
+  @keyframes pulse {
+    0%,100%{opacity:1} 50%{opacity:.6}
+  }
+  .secret-word {
+    font-family: 'Fredoka One', cursive;
+    font-size: clamp(2rem, 9vw, 3rem);
+    color: var(--accent3);
+    margin: 6px 0 4px;
+    word-break: break-word;
+  }
+  .reveal-sub { font-size: .9rem; color: var(--muted); font-weight: 600; margin-top: 6px; }
+
+  /* ── progress dots ── */
+  .progress-dots {
+    display: flex; gap: 8px; flex-wrap: wrap; justify-content: center;
+  }
+  .dot {
+    width: 12px; height: 12px; border-radius: 50%;
+    background: var(--border); transition: background .3s, transform .3s;
+  }
+  .dot.done { background: var(--green); transform: scale(1.2); }
+  .dot.current { background: var(--accent3); transform: scale(1.3); animation: dotPulse .8s ease infinite alternate; }
+  @keyframes dotPulse { from{opacity:1} to{opacity:.4} }
+
+  /* ── clue phase ── */
+  .player-order-list { width: 100%; display: flex; flex-direction: column; gap: 10px; }
+  .player-order-item {
+    display: flex; align-items: center; gap: 14px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 14px 18px;
+    font-size: 1rem; font-weight: 700;
+    animation: fadeUp .3s ease both;
+  }
+  .player-order-item:nth-child(1){animation-delay:.05s}
+  .player-order-item:nth-child(2){animation-delay:.1s}
+  .player-order-item:nth-child(3){animation-delay:.15s}
+  .player-order-item:nth-child(4){animation-delay:.2s}
+  .player-order-item:nth-child(5){animation-delay:.25s}
+  .player-order-item:nth-child(6){animation-delay:.3s}
+  .order-num {
+    width: 34px; height: 34px; border-radius: 10px;
+    background: var(--accent4); color: #fff;
+    font-family: 'Fredoka One', cursive; font-size: 1.1rem;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+
+  /* ── voting screen ── */
+  .vote-section { width: 100%; text-align: center; }
+  .vote-title {
+    font-family: 'Fredoka One', cursive;
+    font-size: clamp(1.8rem, 8vw, 2.6rem);
+    background: linear-gradient(135deg, var(--accent1), var(--accent3));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 8px;
+  }
+  .vote-hint { font-size: .9rem; color: var(--muted); font-weight: 600; margin-bottom: 20px; }
+
+  .reveal-result {
+    width: 100%;
+    background: linear-gradient(135deg, #1e0a3c, #2a0a18);
+    border: 2px solid var(--accent1);
+    border-radius: 20px;
+    padding: 28px 20px;
+    text-align: center;
+    display: none;
+    animation: fadeUp .4s ease both;
+  }
+  .reveal-result.show { display: block; }
+  .result-label { font-size: .85rem; color: var(--muted); font-weight: 700; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 6px; }
+  .result-name {
+    font-family: 'Fredoka One', cursive;
+    font-size: clamp(2rem, 9vw, 3rem);
+    color: var(--accent1); margin-bottom: 16px;
+  }
+  .result-word-label { font-size: .85rem; color: var(--muted); font-weight: 700; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 4px; }
+  .result-word {
+    font-family: 'Fredoka One', cursive;
+    font-size: clamp(1.8rem, 8vw, 2.6rem);
+    color: var(--accent3);
+  }
+  .confetti { font-size: 2.5rem; margin-bottom: 10px; }
+
+  /* ── misc ── */
+  .section-label {
+    font-size: .82rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 2px; color: var(--muted); align-self: flex-start;
+  }
+
+  .tip-box {
+    width: 100%;
+    background: rgba(76,201,240,.07);
+    border: 1px solid rgba(76,201,240,.2);
+    border-radius: 14px;
+    padding: 14px 18px;
+    font-size: .88rem; color: var(--accent2); font-weight: 600;
+    line-height: 1.5;
+  }
+  .tip-box strong { color: var(--text); }
+
+  hr.divider {
+    width: 100%; border: none;
+    border-top: 1px solid var(--border);
+  }
+
+  /* scrollbar */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: var(--surface); }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- ══════════════ SETUP SCREEN ══════════════ -->
+  <div class="screen active" id="screen-setup">
+    <div class="logo">
+      <span>🎭</span>
+      Imposter Who?
+    </div>
+    <p class="tagline">The sneaky pass-and-play word game</p>
+
+    <div class="card">
+      <div class="card-title">👥 Players</div>
+      <div class="player-list" id="player-list"></div>
+      <div style="margin-top:12px">
+        <button class="btn-add" id="btn-add-player">＋ Add Player</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">🗂 Category</div>
+      <select class="styled-select" id="category-select">
+        <option value="Animals">🐘 Animals</option>
+        <option value="Professions">👨‍🍳 Professions</option>
+        <option value="Food">🍕 Food</option>
+        <option value="Movies">🎬 Movies</option>
+        <option value="Locations">📍 Locations</option>
+        <option value="Random">🎲 Random Category</option>
+      </select>
+    </div>
+
+    <div class="tip-box">
+      <strong>How to play:</strong> Each player secretly checks their role. One person is the Imposter who doesn't know the secret word. Everyone gives a one-word clue — then vote out the Imposter!
+    </div>
+
+    <div class="error-msg" id="setup-error"></div>
+    <button class="btn-primary btn-red" id="btn-start">🚀 Start Game</button>
+  </div>
+
+  <!-- ══════════════ PASS DEVICE SCREEN ══════════════ -->
+  <div class="screen" id="screen-pass">
+    <div style="margin-top: 20px">
+      <div class="progress-dots" id="progress-dots"></div>
+    </div>
+    <div class="pass-label">Pass the device to</div>
+    <div class="big-name" id="pass-name"></div>
+    <div class="device-icon">📱</div>
+    <button class="btn-primary btn-purple" id="btn-reveal" style="margin-top:12px">
+      👁 Tap to Reveal Your Role
+    </button>
+    <p style="font-size:.82rem;color:var(--muted);text-align:center">Make sure only <span id="pass-name-mini" style="color:var(--accent3)"></span> is looking!</p>
+  </div>
+
+  <!-- ══════════════ REVEAL SCREEN ══════════════ -->
+  <div class="screen" id="screen-reveal">
+    <div class="reveal-badge" id="reveal-badge">
+      <div class="reveal-emoji" id="reveal-emoji"></div>
+      <div class="reveal-role" id="reveal-role"></div>
+      <div class="secret-word" id="reveal-word"></div>
+      <div class="reveal-sub" id="reveal-sub"></div>
+    </div>
+    <div class="tip-box" id="reveal-tip"></div>
+    <button class="btn-primary btn-teal" id="btn-hide-next">🙈 Hide & Pass to Next</button>
+  </div>
+
+  <!-- ══════════════ CLUE PHASE SCREEN ══════════════ -->
+  <div class="screen" id="screen-clue">
+    <div class="logo" style="font-size:clamp(1.4rem,6vw,2rem)">🗣 Clue Time!</div>
+    <div style="font-size:1rem;color:var(--muted);text-align:center;font-weight:600">
+      Say ONE word related to the secret word — in this order:
+    </div>
+    <div class="player-order-list" id="clue-order-list"></div>
+    <div class="tip-box">
+      <strong>Tip:</strong> Clues can't be too obvious (the Imposter will figure it out!) or too vague (others will suspect you!). Find the sweet spot. 🍬
+    </div>
+    <button class="btn-primary btn-orange" id="btn-goto-vote">🗳 Everyone gave a clue — Vote!</button>
+  </div>
+
+  <!-- ══════════════ VOTING SCREEN ══════════════ -->
+  <div class="screen" id="screen-vote">
+    <div class="vote-section">
+      <div class="vote-title">🔍 Who's the Imposter?</div>
+      <div class="vote-hint">Discuss the clues. When ready, reveal the truth.</div>
+    </div>
+
+    <div class="tip-box" style="background:rgba(255,77,109,.07);border-color:rgba(255,77,109,.2);color:var(--accent1)">
+      <strong style="color:var(--text)">Imposter wins if</strong> they're not voted out OR if they correctly guess the secret word before the reveal!
+    </div>
+
+    <button class="btn-primary btn-red" id="btn-reveal-imposter">💥 Reveal the Imposter!</button>
+
+    <div class="reveal-result" id="reveal-result">
+      <div class="confetti">🎭</div>
+      <div class="result-label">The Imposter was…</div>
+      <div class="result-name" id="result-imposter-name"></div>
+      <hr class="divider" style="margin:16px 0">
+      <div class="result-word-label">The Secret Word was</div>
+      <div class="result-word" id="result-secret-word"></div>
+    </div>
+
+    <button class="btn-primary btn-green" id="btn-play-again" style="display:none">🔄 Play Again</button>
+  </div>
+
+</div>
+
+<script>
+// ── Game Data ──────────────────────────────────────────────
+const gameData = {
+  "Animals":     ["Elephant","Giraffe","Penguin","Kangaroo","Dolphin","Cheetah","Sloth","Chameleon","Rhinoceros","Koala"],
+  "Professions": ["Doctor","Teacher","Astronaut","Plumber","Chef","Detective","Firefighter","Magician","Pilot","Barista"],
+  "Food":        ["Pizza","Sushi","Hamburger","Pancakes","Spaghetti","Tacos","Ice Cream","Salad","Croissant","Curry"],
+  "Movies":      ["Titanic","Star Wars","Jurassic Park","The Matrix","Harry Potter","Avatar","Toy Story","The Lion King","Inception","Jaws"],
+  "Locations":   ["Beach","Hospital","School","Supermarket","Airport","Library","Cemetery","Amusement Park","Gym","Cinema"]
+};
+
+// ── State ──────────────────────────────────────────────────
+let players = [];
+let currentPlayerIndex = 0;
+let imposterIndex = -1;
+let secretWord = '';
+let shuffledPlayers = [];
+
+// ── Helpers ────────────────────────────────────────────────
+const $ = id => document.getElementById(id);
+const screens = ['setup','pass','reveal','clue','vote'];
+
+function showScreen(name) {
+  screens.forEach(s => {
+    const el = $(`screen-${s}`);
+    el.classList.remove('active');
+  });
+  const target = $(`screen-${name}`);
+  target.classList.add('active');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function pick(arr) {
+  return arr[Math.floor(Math.random() * arr.length)];
+}
+
+// ── Setup Screen ───────────────────────────────────────────
+const playerList = $('player-list');
+
+function createPlayerRow(index, placeholder) {
+  const row = document.createElement('div');
+  row.className = 'player-row';
+  row.dataset.index = index;
+
+  const input = document.createElement('input');
+  input.type = 'text';
+  input.maxLength = 20;
+  input.placeholder = placeholder || `Player ${index + 1}`;
+  input.autocomplete = 'off';
+  input.autocorrect = 'off';
+  input.spellcheck = false;
+
+  const removeBtn = document.createElement('button');
+  removeBtn.className = 'btn-icon btn-remove';
+  removeBtn.innerHTML = '✕';
+  removeBtn.title = 'Remove';
+  removeBtn.addEventListener('click', () => {
+    const rows = playerList.querySelectorAll('.player-row');
+    if (rows.length <= 3) {
+      showSetupError('Minimum 3 players required!');
+      return;
+    }
+    row.remove();
+    refreshPlaceholders();
+  });
+
+  row.appendChild(input);
+  row.appendChild(removeBtn);
+  return row;
+}
+
+function refreshPlaceholders() {
+  const rows = playerList.querySelectorAll('.player-row');
+  rows.forEach((r, i) => {
+    const inp = r.querySelector('input');
+    if (!inp.value) inp.placeholder = `Player ${i + 1}`;
+  });
+}
+
+function showSetupError(msg) {
+  const el = $('setup-error');
+  el.textContent = msg;
+  el.style.animation = 'none';
+  void el.offsetWidth;
+  el.style.animation = 'shake .3s ease';
+  setTimeout(() => { el.textContent = ''; }, 3000);
+}
+
+// Init with 4 players
+for (let i = 0; i < 4; i++) {
+  playerList.appendChild(createPlayerRow(i));
+}
+
+$('btn-add-player').addEventListener('click', () => {
+  const rows = playerList.querySelectorAll('.player-row');
+  if (rows.length >= 15) {
+    showSetupError('Maximum 15 players allowed!');
+    return;
+  }
+  playerList.appendChild(createPlayerRow(rows.length));
+});
+
+$('btn-start').addEventListener('click', startGame);
+
+function startGame() {
+  const inputs = playerList.querySelectorAll('input');
+  const names = [];
+  inputs.forEach((inp, i) => {
+    const v = inp.value.trim();
+    names.push(v || `Player ${i + 1}`);
+  });
+
+  if (names.length < 3) {
+    showSetupError('You need at least 3 players!');
+    return;
+  }
+
+  // Check duplicates
+  const unique = new Set(names.map(n => n.toLowerCase()));
+  if (unique.size !== names.length) {
+    showSetupError('Player names must be unique!');
+    return;
+  }
+
+  // Determine category
+  let catKey = $('category-select').value;
+  if (catKey === 'Random') {
+    const keys = Object.keys(gameData);
+    catKey = pick(keys);
+  }
+  const words = gameData[catKey];
+  secretWord = pick(words);
+
+  // Shuffle players
+  shuffledPlayers = shuffle(names);
+  imposterIndex = Math.floor(Math.random() * shuffledPlayers.length);
+  currentPlayerIndex = 0;
+
+  showPassScreen();
+}
+
+// ── Pass Screen ────────────────────────────────────────────
+function showPassScreen() {
+  const name = shuffledPlayers[currentPlayerIndex];
+  $('pass-name').textContent = name;
+  $('pass-name-mini').textContent = name;
+
+  // Progress dots
+  const dotsEl = $('progress-dots');
+  dotsEl.innerHTML = '';
+  shuffledPlayers.forEach((_, i) => {
+    const dot = document.createElement('div');
+    dot.className = 'dot';
+    if (i < currentPlayerIndex) dot.classList.add('done');
+    else if (i === currentPlayerIndex) dot.classList.add('current');
+    dotsEl.appendChild(dot);
+  });
+
+  showScreen('pass');
+}
+
+$('btn-reveal').addEventListener('click', showRevealScreen);
+
+// ── Reveal Screen ──────────────────────────────────────────
+function showRevealScreen() {
+  const badge = $('reveal-badge');
+  const emojiEl = $('reveal-emoji');
+  const roleEl = $('reveal-role');
+  const wordEl = $('reveal-word');
+  const subEl = $('reveal-sub');
+  const tipEl = $('reveal-tip');
+
+  if (currentPlayerIndex === imposterIndex) {
+    // Imposter
+    badge.className = 'reveal-badge imposter';
+    emojiEl.textContent = '😈';
+    roleEl.textContent = 'YOU ARE THE IMPOSTER';
+    roleEl.className = 'reveal-role imp';
+    wordEl.textContent = '';
+    subEl.textContent = 'You don\'t know the word. Blend in!';
+    tipEl.innerHTML = '<strong>Your mission:</strong> Listen carefully to other players\' clues, give a convincing one-word hint, and avoid getting voted out!';
+  } else {
+    // Crewmate
+    badge.className = 'reveal-badge crewmate';
+    emojiEl.textContent = '🕵️';
+    roleEl.textContent = 'The Secret Word is';
+    roleEl.className = 'reveal-role crew';
+    wordEl.textContent = secretWord;
+    subEl.textContent = 'Remember this — but don\'t make it too obvious!';
+    tipEl.innerHTML = '<strong>Your mission:</strong> Give a clue that reveals you know the word, but don\'t make it so obvious the Imposter steals it!';
+  }
+
+  showScreen('reveal');
+}
+
+$('btn-hide-next').addEventListener('click', () => {
+  // Clear sensitive info before switching
+  $('reveal-word').textContent = '';
+  $('reveal-role').textContent = '';
+  $('reveal-emoji').textContent = '';
+  $('reveal-sub').textContent = '';
+
+  currentPlayerIndex++;
+  if (currentPlayerIndex >= shuffledPlayers.length) {
+    showClueScreen();
+  } else {
+    showPassScreen();
+  }
+});
+
+// ── Clue Phase Screen ──────────────────────────────────────
+function showClueScreen() {
+  const list = $('clue-order-list');
+  list.innerHTML = '';
+
+  shuffledPlayers.forEach((name, i) => {
+    const item = document.createElement('div');
+    item.className = 'player-order-item';
+    item.style.animationDelay = `${i * 0.06}s`;
+
+    const num = document.createElement('div');
+    num.className = 'order-num';
+    num.textContent = i + 1;
+
+    // Cycle accent colors for numbers
+    const colors = ['#7b2fff','#ff4d6d','#4cc9f0','#f8961e','#43e97b','#e040fb','#00bcd4','#ff6e40'];
+    num.style.background = colors[i % colors.length];
+
+    const nameSpan = document.createElement('span');
+    nameSpan.textContent = name;
+
+    item.appendChild(num);
+    item.appendChild(nameSpan);
+    list.appendChild(item);
+  });
+
+  showScreen('clue');
+}
+
+$('btn-goto-vote').addEventListener('click', showVoteScreen);
+
+// ── Voting Screen ──────────────────────────────────────────
+function showVoteScreen() {
+  $('reveal-result').classList.remove('show');
+  $('btn-play-again').style.display = 'none';
+  $('btn-reveal-imposter').style.display = '';
+  showScreen('vote');
+}
+
+$('btn-reveal-imposter').addEventListener('click', () => {
+  $('result-imposter-name').textContent = shuffledPlayers[imposterIndex];
+  $('result-secret-word').textContent = secretWord;
+  $('reveal-result').classList.add('show');
+  $('btn-reveal-imposter').style.display = 'none';
+  $('btn-play-again').style.display = '';
+});
+
+$('btn-play-again').addEventListener('click', () => {
+  // Keep names intact
+  currentPlayerIndex = 0;
+  imposterIndex = -1;
+  secretWord = '';
+  shuffledPlayers = [];
+  showScreen('setup');
+});
+</script>
+</body>
+</html>
