@@ -575,8 +575,8 @@
 
   <div class="content">
     <header class="hub-header">
-      <h1 class="hub-title">GAME HUB</h1>
-      <p class="hub-sub">Real-time multiplayer · <span>●</span> Live · Node.js + Socket.io</p>
+      <h1 class="hub-title">CLASH HUB</h1>
+      <p class="hub-sub">Enter the Arena <span>●</span></p>
     </header>
 
     <main class="game-grid">
@@ -734,7 +734,7 @@
       </div>
     </section>
 
-    <footer class="footer">MULTIPLAYER GAME HUB · NODE.JS + SOCKET.IO · 2025</footer>
+    <footer class="footer">CLASH HUB MADE BY STEVE 2026</footer>
   </div>
 
   <!-- ── Review Modal ── -->
@@ -821,14 +821,7 @@
       'Game Hub':     '#ffd700'
     };
 
-    const seedReviews = [
-      { name:'Priya S.',  avatar:'👩🏽',  game:'Imposter Who?', stars:5, text:'Absolutely addictive at parties. My friend group could not stop playing — the bluffing is SO good. 10/10 would recommend to anyone!', date:'2 days ago' },
-      { name:'Rajan K.',  avatar:'👨🏽',  game:'UNO',           stars:5, text:'The UNO implementation is spot on. Draw-4 chaos hits different online. Best virtual card game I\'ve played.', date:'5 days ago' },
-      { name:'Meera T.',  avatar:'👩🏻',  game:'Ludo',          stars:4, text:'Great Ludo experience. Capturing opponents never gets old. Would love a dice animation tweak but overall fantastic!', date:'1 week ago' },
-      { name:'Dev P.',    avatar:'🧑🏾',  game:'Imposter Who?', stars:5, text:'The word categories are perfect. Animals round had everyone losing it when my dad gave "trunk" as a clue for elephant — imposter caught instantly 😂', date:'1 week ago' },
-      { name:'Aisha R.',  avatar:'👩🏼',  game:'Tic Tac Toe',   stars:4, text:'Super clean and fast. The online matchmaking works seamlessly. Played 30+ rounds and had zero lag.', date:'2 weeks ago' },
-      { name:'Vikram N.', avatar:'👨🏻',  game:'Game Hub',      stars:5, text:'This hub is a goldmine for game nights. No ads, no accounts, just pure fun. Adding Imposter Who? was a genius move!', date:'3 weeks ago' },
-    ];
+    const seedReviews = [];
 
     let allReviews = [...seedReviews];
 
@@ -898,7 +891,6 @@
       const text = document.getElementById('r-text').value.trim();
 
       if (!name) { alert('Please enter your name!'); return; }
-      if (!text || text.length < 10) { alert('Please write at least 10 characters!'); return; }
 
       const avatars = ['🧑','👩','👨','🧑🏻','👩🏻','👨🏻','🧑🏽','👩🏽','👨🏽','🧑🏾','👩🏾','👨🏾'];
       const newReview = {
@@ -906,7 +898,7 @@
         avatar: avatars[Math.floor(Math.random() * avatars.length)],
         game,
         stars: pickedStars,
-        text,
+        text: text || '—',
         date: 'Just now'
       };
 
